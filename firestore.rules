@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isActiveAdmin() {
+      return isAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
+    }
+
+    function isEventAdmin() {
+      return isActiveAdmin() && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isStudentOwner(studentId) {
+      return isSignedIn() && request.auth.uid == studentId;
+    }
+
+    function isActiveStudent() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/students/$(request.auth.uid)) &&
+        (!get(/databases/$(database)/documents/students/$(request.auth.uid)).data.keys().hasAny(['status']) ||
+          get(/databases/$(database)/documents/students/$(request.auth.uid)).data.status != 'disabled');
+    }
+
+    match /admins/{adminId} {
+      allow read: if request.auth != null && request.auth.uid == adminId;
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /students/{studentId} {
+      allow create: if isSignedIn() && request.auth.uid == studentId;
+      allow read: if isStudentOwner(studentId) || isActiveAdmin();
+      allow update: if isActiveAdmin() || (
+        isStudentOwner(studentId) &&
+        (!resource.data.keys().hasAny(['status']) || resource.data.status != 'disabled') &&
+        (!request.resource.data.keys().hasAny(['status']) || request.resource.data.status == resource.data.status)
+      );
+      allow delete: if isActiveAdmin();
+    }
+
+    match /meetings/{meetingId} {
+      allow read: if isActiveAdmin() || isActiveStudent();
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /rollNumbers/{rollNumber} {
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow read: if isActiveAdmin();
+      allow update, delete: if isActiveAdmin();
+    }
+
+    match /notificationTokens/{userId} {
+      // Students can read and write only their own token
+      allow read, write: if isStudentOwner(userId) &&
+        (!get(/databases/$(database)/documents/students/$(userId)).data.keys().hasAny(['status']) ||
+          get(/databases/$(database)/documents/students/$(userId)).data.status != 'disabled');
+      // Admins can read all tokens
+      allow read: if isActiveAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      // Anyone authenticated can read notifications (received by service worker)
+      allow read: if isSignedIn();
+      // Only admins can create and manage notifications
+      allow create, update, delete: if isActiveAdmin();
+    }
+
+    match /events/{eventId} {
+      allow read: if resource.data.active == true || isEventAdmin();
+      allow create, update, delete: if isEventAdmin();
+    }
+
+    match /eventRegistrations/{registrationId} {
+      allow read: if isEventAdmin() || (isSignedIn() && resource.data.studentId == request.auth.uid);
+      allow create: if isSignedIn() &&
+        request.resource.data.studentId == request.auth.uid &&
+        registrationId == request.resource.data.eventId + '_' + request.auth.uid;
+      allow update, delete: if isEventAdmin();
+    }
+  }
+}

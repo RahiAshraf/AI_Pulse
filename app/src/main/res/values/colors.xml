@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="sophisticated_dark_bg">#020617</color>
+    <color name="sophisticated_dark_surface">#0F172A</color>
+    <color name="cyan_400">#22D3EE</color>
+    <color name="teal_500">#14B8A6</color>
+    <color name="slate_200">#E2E8F0</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>

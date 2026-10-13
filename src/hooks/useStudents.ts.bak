@@ -1,0 +1,78 @@
+import { useEffect, useState } from "react";
+import { collection, doc, getDoc, onSnapshot, orderBy, query } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
+import type { Student } from "@/types";
+
+export function useStudents() {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+
+    const loadStudents = async () => {
+      const user = auth.currentUser;
+
+      if (!user) {
+        setStudents([]);
+        setIsLoading(false);
+        setIsConnected(false);
+        return;
+      }
+
+      const adminSnap = await getDoc(doc(db, "admins", user.uid));
+
+      if (!adminSnap.exists() || adminSnap.data()?.active !== true) {
+        setStudents([]);
+        setIsLoading(false);
+        setIsConnected(false);
+        return;
+      }
+
+      const studentsQuery = query(collection(db, "students"), orderBy("registeredAt", "desc"));
+
+      unsubscribe = onSnapshot(
+        studentsQuery,
+        (snapshot) => {
+          const nextStudents = snapshot.docs.map((document) => {
+            const data = document.data();
+            const registeredAt =
+              typeof data.registeredAt?.toDate === "function"
+                ? data.registeredAt.toDate().toISOString()
+                : String(data.registeredAt ?? new Date().toISOString());
+
+            return {
+              id: document.id,
+              fullName: String(data.name ?? data.fullName ?? ""),
+              rollNumber: String(data.rollNumber ?? ""),
+              email: String(data.email ?? ""),
+              phone: String(data.phone ?? ""),
+              branch: String(data.programme ?? data.branch ?? ""),
+              year: String(data.year ?? ""),
+              section: String(data.section ?? ""),
+              registeredAt,
+            } satisfies Student;
+          });
+
+          setStudents(nextStudents);
+          setIsLoading(false);
+          setIsConnected(true);
+        },
+        (error) => {
+          console.error("Failed to load students:", error);
+          setStudents([]);
+          setIsLoading(false);
+          setIsConnected(false);
+        },
+      );
+    };
+
+    loadStudents();
+    return () => {
+      unsubscribe?.();
+    };
+  }, []);
+
+  return { students, isLoading, isConnected };
+}

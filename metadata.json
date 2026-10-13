@@ -1,0 +1,7 @@
+{
+  "name": "AI PULSE Student",
+  "description": "Android app for AI PULSE Student dashboard and learning hub.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
