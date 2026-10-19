@@ -10,12 +10,12 @@ export const Route = createFileRoute("/join")({
       {
         name: "description",
         content:
-          "Register as a member of the AI Learning Hub at Madanapalle Institute of Technology & Science.",
+          "Register as a member of the AI Learning at Madanapalle Institute of Technology & Science.",
       },
-      { property: "og:title", content: "Join AI Learning Hub — AI PULSE | MITS" },
+      { property: "og:title", content: "Join AI Learning Hub - MITS" },
       {
         property: "og:description",
-        content: "Become a member of the AI Learning Hub community at MITS.",
+        content: "Become a member of the AI Learning Hub Community at MITS.",
       },
     ],
   }),

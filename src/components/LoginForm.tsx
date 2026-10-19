@@ -16,6 +16,10 @@ const authErrorMessages: Record<string, string> = {
   "auth/user-not-found": "No account found for this email.",
   "auth/wrong-password": "Incorrect password. Please try again.",
   "auth/invalid-email": "Please enter a valid MITS email address.",
+  "auth/operation-not-allowed":
+    "Email/password sign-in is disabled in Firebase. Enable it in Firebase Authentication.",
+  "auth/configuration-not-found":
+    "Firebase Authentication is not configured for this project. Check the Firebase settings.",
   "auth/too-many-requests": "Too many sign-in attempts. Please wait a moment and try again.",
   "auth/network-request-failed": "Network issue while signing in. Please check your connection and try again.",
 };
@@ -47,7 +51,7 @@ export function LoginForm({
       // STEP 1: Firebase Authentication
       console.log("=== AUTH SIGN-IN START ===");
       console.log("Email:", values.email.trim().toLowerCase());
-      
+
       const userCredential = await signInWithEmailAndPassword(
         auth,
         values.email.trim().toLowerCase(),
@@ -58,46 +62,39 @@ export function LoginForm({
       console.log("UID:", userCredential.user.uid);
       console.log("Email:", userCredential.user.email);
 
-      // STEP 2: Check admin role
-      console.log("=== ROLE CHECK: ADMIN ===");
-      try {
-        const adminSnap = await getDoc(doc(db, "admins", userCredential.user.uid));
-        console.log("Admin doc read successful");
-        console.log("Admin doc exists:", adminSnap.exists());
-        
-        if (adminSnap.exists() && adminSnap.data()?.active === true) {
-          console.log("User is ACTIVE ADMIN → redirecting to /admin");
+
+      // Check the profile required by this login page
+      if (variant === "admin") {
+        const adminSnap = await getDoc(
+          doc(db, "admins", userCredential.user.uid)
+        );
+
+        if (
+          adminSnap.exists() &&
+          adminSnap.data()?.active === true &&
+          adminSnap.data()?.role === "admin"
+        ) {
           navigate({ to: "/admin", replace: true });
           return;
         }
-      } catch (adminError: any) {
-        console.error("Admin role check Firestore error:", adminError.code, adminError.message);
-        // This is expected for non-admins, continue to student check
-      }
 
-      // STEP 3: Check student role
-      console.log("=== ROLE CHECK: STUDENT ===");
-      try {
-        const studentSnap = await getDoc(doc(db, "students", userCredential.user.uid));
-        console.log("Student doc read successful");
-        console.log("Student doc exists:", studentSnap.exists());
-
-        if (studentSnap.exists()) {
-          console.log("User is STUDENT → redirecting to /student/dashboard");
-          navigate({ to: "/student/dashboard", replace: true });
-          return;
-        }
-      } catch (studentError: any) {
-        console.error("Student role check Firestore error:", studentError.code, studentError.message);
         await signOut(auth);
-        setLoginError("Unable to load your profile. Please try again.");
+        setLoginError("This account is not an active administrator.");
         return;
       }
 
-      // No matching role found
-      console.log("=== NO MATCHING ROLE FOUND ===");
+      const studentSnap = await getDoc(
+        doc(db, "students", userCredential.user.uid)
+      );
+
+      if (studentSnap.exists()) {
+        navigate({ to: "/student/dashboard", replace: true });
+        return;
+      }
+
       await signOut(auth);
-      setLoginError("No matching student or admin profile was found for this account.");
+      setLoginError("No student profile was found for this account.");
+
     } catch (error) {
       const firebaseError = error as AuthError;
       console.error("=== AUTH ERROR ===");
@@ -114,7 +111,7 @@ export function LoginForm({
         <Label className="text-[11px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
           {emailLabel}
         </Label>
-        <Input type="email" placeholder="you@mits.ac.in" autoComplete="email" {...register("email")} />
+        <Input type="email" placeholder="email@mits.ac.in" autoComplete="email" {...register("email")} />
         {errors.email ? <p className="text-xs text-destructive">{errors.email.message}</p> : null}
       </div>
 

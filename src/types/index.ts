@@ -2,9 +2,9 @@
 
 export type Branch =
   | "B.Tech - Computer Science & Engineering"
-  | "B.Tech - CSE (Artificial Intelligence and Data Science)"
-  | "B.Tech - CSE (Artificial Intelligence and Machine Learning)"
-  | "B.Tech - CSE (Artificial Intelligence and Robotics)"
+  | "B.Tech - CSE (Artificial Intelligence & Data Science)"
+  | "B.Tech - CSE (Artificial Intelligence & Machine Learning)"
+  | "B.Tech - CSE (Artificial Intelligence  Robotics)"
   | "B.Tech - CSE (Cyber Security)"
   | "B.Tech - Electronics & Communication Engineering"
   | "B.Tech - Electrical and Electronics Engineering"
@@ -14,8 +14,8 @@ export type Branch =
   | "B.B.A. - Management Studies"
   | "B.C.A. - Computer Applications";
 export type Year = "1" | "2" | "3" | "4";
-export type MeetingStatus = "upcoming" | "completed" | "cancelled";
-export type EventStatus = "active" | "inactive";
+export type MeetingStatus = "Upcoming" | "Completed" | "Cancelled";
+export type EventStatus = "Active" | "Inactive";
 
 /** Firestore collection: `students` (document id = Firebase Auth uid). */
 export interface Student {
@@ -27,7 +27,7 @@ export interface Student {
   branch: Branch | string;
   year: Year | string;
   section: string;
-  status: "active" | "disabled";
+  status: "Active" | "Disabled";
   registeredAt: string; // ISO string from Firestore Timestamp
 }
 

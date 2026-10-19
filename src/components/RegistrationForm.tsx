@@ -27,6 +27,10 @@ const authErrorMessages: Record<string, string> = {
   "auth/email-already-in-use": "This email is already registered. Please log in or use a different college email.",
   "auth/invalid-email": "Please enter a valid MITS email address.",
   "auth/weak-password": "Password is too weak. Use at least 6 characters.",
+  "auth/operation-not-allowed":
+    "Email/password registration is disabled in Firebase. Enable it in Firebase Authentication.",
+  "auth/configuration-not-found":
+    "Firebase Authentication is not configured for this project. Check the Firebase settings.",
   "auth/network-request-failed": "Network issue while creating your account. Please check your connection and try again.",
 };
 
@@ -103,11 +107,15 @@ export function RegistrationForm() {
 
       setIsSuccess(true);
       toast.success("Registration successful.");
-    } catch (error) {
-      const firebaseError = error as AuthError;
-      const friendlyMessage = authErrorMessages[firebaseError?.code ?? ""] ?? "Unable to create your account. Please try again.";
-      setSubmitError(friendlyMessage);
+    } catch (error: unknown) {
+      const authError = error as AuthError;
+      console.error("Registration failed:", authError.code, authError.message);
+      setSubmitError(
+        authErrorMessages[authError.code] ??
+          "Registration failed. Please try again.",
+      );
     }
+
   };
 
   if (isSuccess) {
